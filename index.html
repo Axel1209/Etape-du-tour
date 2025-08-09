@@ -180,7 +180,6 @@
             left: 0;
             transform: translateX(-50%);
             font-size: 2.5rem;
-            transition: left 1s linear;
             z-index: 10;
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
         }
@@ -536,10 +535,12 @@
         let gameStarted = false;
         let startTime;
         let timerInterval;
-        let position = 0;
+        let distance = 0;
         let waterLevel = 100;
         let foodLevel = 100;
         let gameActive = false;
+
+        let routePath, routePoints, pathLength;
         
         // Sélectionner le joueur
         function selectPlayer(player) {
@@ -559,21 +560,24 @@
             const height = 200;
             
             // Points du parcours (simulant les montées/descentes)
-            const points = [
-                [0, height - 50],    // Albertville
-                [width * 0.3, height - 180],  // Col des Saisies
-                [width * 0.6, height - 120],  // Cormet de Roselend
-                [width, height - 200]  // La Plagne
+            routePoints = [
+                { x: 0, y: height - 50 },    // Albertville
+                { x: width * 0.3, y: height - 180 },  // Col des Saisies
+                { x: width * 0.6, y: height - 120 },  // Cormet de Roselend
+                { x: width, y: height - 200 }  // La Plagne
             ];
             
             // Créer le chemin SVG
-            let pathData = `M ${points[0][0]} ${points[0][1]}`;
-            for (let i = 1; i < points.length; i++) {
-                pathData += ` L ${points[i][0]} ${points[i][1]}`;
+            let pathData = `M ${routePoints[0].x} ${routePoints[0].y}`;
+            for (let i = 1; i < routePoints.length; i++) {
+                pathData += ` L ${routePoints[i].x} ${routePoints[i].y}`;
             }
             
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
             svg.innerHTML = `<path d="${pathData}" />`;
+
+            routePath = svg.querySelector('path');
+            pathLength = routePath.getTotalLength();
         }
         
         // Démarrer la course
@@ -607,15 +611,38 @@
         // Boucle principale du jeu
         function gameLoop() {
             if (!gameActive) return;
-            
-            // Avancer le cycliste
-            position += 0.5;
-            if (position > 100) position = 100;
-            
+
+            // Calcul de la vitesse en fonction de la pente
+            const currentPoint = routePath.getPointAtLength(distance);
+            const nextPoint = routePath.getPointAtLength(Math.min(distance + 1, pathLength));
+            const slope = nextPoint.y - currentPoint.y;
+
+            let speedFactor = 1 + slope * 2; // Ajuster ce facteur pour un effet plus marqué
+            if (speedFactor < 0.3) speedFactor = 0.3; // Vitesse minimale en montée
+            if (speedFactor > 1.8) speedFactor = 1.8; // Vitesse maximale en descente
+
+            const baseSpeed = 1.5;
+            distance += baseSpeed * speedFactor;
+
+            if (distance > pathLength) {
+                distance = pathLength;
+            }
+
             // Mettre à jour la position du cycliste
             const cyclist = document.getElementById('cyclist');
-            cyclist.style.left = `${position}%`;
+            const point = currentPoint;
             
+            const svg = document.getElementById('routePath');
+            const svgRect = svg.getBoundingClientRect();
+
+            // Convertir les coordonnées SVG en pourcentages par rapport au conteneur
+            const cyclistX = (point.x / 800) * 100;
+            const cyclistY = (point.y / 200) * 100;
+
+            cyclist.style.left = `${cyclistX}%`;
+            cyclist.style.bottom = `${100 - cyclistY}%`; // Inverser Y car l'origine est en haut à gauche
+
+
             // Diminuer les ressources
             waterLevel -= Math.random() * 1.5;
             foodLevel -= Math.random() * 1.2;
@@ -635,7 +662,7 @@
             }
             
             // Vérifier si le joueur a gagné
-            if (position >= 100) {
+            if (distance >= pathLength) {
                 endGame(true);
                 return;
             }
@@ -694,14 +721,13 @@
         // Redémarrer le jeu
         function restartGame() {
             // Réinitialiser les variables
-            position = 0;
+            distance = 0;
             waterLevel = 100;
             foodLevel = 100;
             gameStarted = false;
             gameActive = false;
             
             // Réinitialiser l'interface
-            document.getElementById('cyclist').style.left = '0%';
             document.getElementById('waterBar').style.width = '100%';
             document.getElementById('foodBar').style.width = '100%';
             document.getElementById('startBtn').disabled = false;
