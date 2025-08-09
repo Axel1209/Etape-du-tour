@@ -475,13 +475,21 @@
                                 <div class="landmark-dot"></div>
                                 <div class="landmark-label">Albertville</div>
                             </div>
-                            <div class="landmark" style="left: 30%;">
+                            <div class="landmark" style="left: 20%;">
                                 <div class="landmark-dot"></div>
                                 <div class="landmark-label">Col des Saisies</div>
+                            </div>
+                            <div class="landmark" style="left: 35%;">
+                                <div class="landmark-dot"></div>
+                                <div class="landmark-label">Beaufort</div>
                             </div>
                             <div class="landmark" style="left: 60%;">
                                 <div class="landmark-dot"></div>
                                 <div class="landmark-label">Cormet de Roselend</div>
+                            </div>
+                            <div class="landmark" style="left: 80%;">
+                                <div class="landmark-dot"></div>
+                                <div class="landmark-label">Bourg-St-Maurice</div>
                             </div>
                             <div class="landmark" style="left: 100%;">
                                 <div class="landmark-dot"></div>
@@ -570,10 +578,12 @@
             
             // Points du parcours (simulant les montées/descentes)
             routePoints = [
-                { x: 0, y: height - 50 },    // Albertville
-                { x: width * 0.3, y: height - 180 },  // Col des Saisies
-                { x: width * 0.6, y: height - 120 },  // Cormet de Roselend
-                { x: width, y: height - 200 }  // La Plagne
+                { x: 0, y: height - 40 },           // Albertville (départ)
+                { x: width * 0.2, y: height - 180 }, // Col des Saisies (montée)
+                { x: width * 0.35, y: height - 60 }, // Beaufort (descente)
+                { x: width * 0.6, y: height - 190 }, // Cormet de Roselend (montée)
+                { x: width * 0.8, y: height - 50 },  // Bourg-Saint-Maurice (descente)
+                { x: width, y: height - 200 }       // La Plagne (montée finale)
             ];
             
             // Créer le chemin SVG
@@ -630,10 +640,10 @@
             if (speedFactor < 0.3) speedFactor = 0.3; // Vitesse minimale en montée
             if (speedFactor > 1.8) speedFactor = 1.8; // Vitesse maximale en descente
 
-            let speed = 1.5 * speedFactor;
+            let speed = 2.5 * speedFactor;
 
             if (isAccelerating) {
-                speed *= 2; // Double la vitesse en cas d'accélération
+                speed *= 3; // Triple la vitesse en cas d'accélération
             }
 
             distance += speed;
