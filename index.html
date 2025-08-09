@@ -282,6 +282,10 @@
         .food-btn {
             border: 2px solid #FF6347;
         }
+
+        .accelerate-btn {
+            border: 2px solid #FFD700;
+        }
         
         .start-btn {
             background: linear-gradient(to bottom, #4CAF50, #2E7D32);
@@ -512,6 +516,10 @@
                             <i class="fas fa-hamburger"></i>
                             <span>Manger</span>
                         </button>
+                        <button class="action-btn accelerate-btn" id="accelerateBtn" onclick="accelerate()">
+                            <i class="fas fa-bolt"></i>
+                            <span>Accélérer</span>
+                        </button>
                     </div>
                 </div>
                 
@@ -539,6 +547,7 @@
         let waterLevel = 100;
         let foodLevel = 100;
         let gameActive = false;
+        let isAccelerating = false;
 
         let routePath, routePoints, pathLength;
         
@@ -621,8 +630,13 @@
             if (speedFactor < 0.3) speedFactor = 0.3; // Vitesse minimale en montée
             if (speedFactor > 1.8) speedFactor = 1.8; // Vitesse maximale en descente
 
-            const baseSpeed = 1.5;
-            distance += baseSpeed * speedFactor;
+            let speed = 1.5 * speedFactor;
+
+            if (isAccelerating) {
+                speed *= 2; // Double la vitesse en cas d'accélération
+            }
+
+            distance += speed;
 
             if (distance > pathLength) {
                 distance = pathLength;
@@ -644,8 +658,17 @@
 
 
             // Diminuer les ressources
-            waterLevel -= Math.random() * 1.5;
-            foodLevel -= Math.random() * 1.2;
+            let waterConsumption = 0.5;
+            let foodConsumption = 0.4;
+
+            if (isAccelerating) {
+                if (slope < 0) { // Montée
+                    foodConsumption *= 10; // Consomme 10x plus de nourriture
+                }
+            }
+
+            waterLevel -= Math.random() * waterConsumption;
+            foodLevel -= Math.random() * foodConsumption;
             
             // Vérifier les limites
             if (waterLevel < 0) waterLevel = 0;
@@ -671,6 +694,32 @@
             setTimeout(gameLoop, 100);
         }
         
+        // Accélérer
+        function accelerate() {
+            if (!gameActive || isAccelerating) return;
+
+            // Calcul de la pente pour la logique de risque/coût
+            const currentPoint = routePath.getPointAtLength(distance);
+            const nextPoint = routePath.getPointAtLength(Math.min(distance + 1, pathLength));
+            const slope = nextPoint.y - currentPoint.y;
+
+            // Risque de chute en descente
+            if (slope > 0) { // Descente
+                if (Math.random() < 0.2) { // 20% de chance de chute
+                    endGame(false, 'crash');
+                    return;
+                }
+            }
+
+            isAccelerating = true;
+            document.getElementById('accelerateBtn').disabled = true;
+
+            setTimeout(() => {
+                isAccelerating = false;
+                document.getElementById('accelerateBtn').disabled = false;
+            }, 1000); // Durée de l'accélération : 1 seconde
+        }
+
         // Utiliser une ressource (eau ou nourriture)
         function useResource(type) {
             if (!gameActive) return;
@@ -689,7 +738,7 @@
         }
         
         // Terminer le jeu
-        function endGame(isWinner) {
+        function endGame(isWinner, reason = "") {
             gameActive = false;
             clearInterval(timerInterval);
             
@@ -708,7 +757,9 @@
                 resultTitle.textContent = 'Défaite!';
                 resultTitle.className = 'result-title lose';
                 
-                if (waterLevel <= 0) {
+                if (reason === 'crash') {
+                    resultMessage.innerHTML = `Oh non <strong>${selectedPlayer}</strong>!<br>Vous avez chuté en accélérant en descente!`;
+                } else if (waterLevel <= 0) {
                     resultMessage.innerHTML = `Oh non <strong>${selectedPlayer}</strong>!<br>Vous avez manqué d'eau!`;
                 } else {
                     resultMessage.innerHTML = `Oh non <strong>${selectedPlayer}</strong>!<br>Vous avez manqué de nourriture!`;
